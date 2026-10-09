@@ -125,7 +125,7 @@ export default function App() {
             <Result m={lastMatch} p={p} now={now} dropActive={dropActive} go={go} openProduct={openProduct} maxCoinsFor={maxCoinsFor} />
           )}
           {screen === 'store' && (
-            <Store p={p} go={go} openProduct={openProduct} isLocked={isLocked} maxCoinsFor={maxCoinsFor} dropActive={dropActive} now={now} />
+            <Store p={p} go={go} openProduct={openProduct} isLocked={isLocked} maxCoinsFor={maxCoinsFor} capFor={capFor} dropActive={dropActive} now={now} />
           )}
           {screen === 'product' && product && (
             <Product
@@ -311,7 +311,7 @@ function Result({ m, p, now, dropActive, go, openProduct, maxCoinsFor }) {
   )
 }
 
-function Store({ p, go, openProduct, isLocked, maxCoinsFor, dropActive, now }) {
+function Store({ p, go, openProduct, isLocked, maxCoinsFor, capFor, dropActive, now }) {
   const [tab, setTab] = useState('foryou')
   const t = tierFor(p.level)
   const nt = nextTier(p.level)
@@ -345,6 +345,7 @@ function Store({ p, go, openProduct, isLocked, maxCoinsFor, dropActive, now }) {
         {list.map((prod) => {
           const locked = isLocked(prod)
           const c = maxCoinsFor(prod)
+          const capCoins = coinsFor(prod.price * capFor(prod))
           return (
             <div key={prod.id} className={'card' + (locked ? ' locked' : '')} onClick={() => openProduct(prod.id)}>
               <div className="card-img" style={{ background: prod.gradient }}>
@@ -361,6 +362,7 @@ function Store({ p, go, openProduct, isLocked, maxCoinsFor, dropActive, now }) {
                   <span> + {num(c)}🪙</span>
                 </div>
                 <s className="mrp">{inr(prod.price)}</s>
+                {c < capCoins && <div className="card-best">Best: {inr(prod.price - inrFor(capCoins))} with {num(capCoins)}🪙</div>}
               </div>
             </div>
           )
