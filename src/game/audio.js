@@ -60,6 +60,7 @@ export const sfx = {
   },
   isMuted: () => muted,
   coin() { tone(1046, 0.06, { type: 'square', vol: 0.06 }); tone(1568, 0.09, { type: 'square', vol: 0.05, delay: 0.045 }) },
+  jump() { tone(330, 0.18, { type: 'square', vol: 0.07, slide: 500 }) },
   swish() { noise(0.08, { vol: 0.08, freq: 3000 }) },
   near() { tone(660, 0.12, { type: 'triangle', vol: 0.12, slide: 500 }) },
   power() { tone(440, 0.25, { type: 'sawtooth', vol: 0.08, slide: 900 }) },

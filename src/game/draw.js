@@ -1,7 +1,7 @@
-// Shared canvas drawing helpers (used by the race engine and the garage preview)
+// Cartoon canvas art shared by the run engine and the character previews
 
 export function rr(ctx, x, y, w, h, r) {
-  r = Math.min(r, w / 2, h / 2)
+  r = Math.max(0, Math.min(r, w / 2, h / 2))
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.arcTo(x + w, y, x + w, y + h, r)
@@ -11,258 +11,309 @@ export function rr(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-export function skinColor(c, t) {
-  return c === 'rgb' ? `hsl(${(t * 90) % 360},90%,58%)` : c
+const OUTLINE = '#1e293b'
+
+function blob(ctx, fill, lw) {
+  ctx.fillStyle = fill
+  ctx.fill()
+  ctx.lineWidth = lw
+  ctx.strokeStyle = OUTLINE
+  ctx.stroke()
 }
 
-// Rear view of the player's car. (x, y) = bottom-centre, w = width in px
-export function drawCar(ctx, x, y, w, skin, { tilt = 0, t = 0, boost = false, brake = false } = {}) {
-  const h = w * 0.42
-  const body = skinColor(skin.body, t)
-  const accent = skinColor(skin.accent, t + 1.5)
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.rotate(tilt * 0.1)
+/* Runner seen from behind. (x, y) = feet on the ground, h = standing height in px.
+   wear = { headphones, sneakers, hoodie, cap } booleans */
+export function drawRunner(ctx, x, y, h, wear = {}, { t = 0, run = true, jump = 0, slide = false, boost = false } = {}) {
+  const lw = Math.max(1.5, h * 0.025)
+  const ph = run ? t * 13 : 0
+  const sw = Math.sin(ph)
 
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,.45)'
+  // shadow stays on the ground
+  ctx.fillStyle = 'rgba(30,41,59,.28)'
   ctx.beginPath()
-  ctx.ellipse(0, -h * 0.02, w * 0.58, h * 0.16, 0, 0, Math.PI * 2)
+  ctx.ellipse(x, y, h * 0.26 * (1 - Math.min(jump, 1) * 0.4), h * 0.07, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  // nitro flames
+  ctx.save()
+  ctx.translate(x, y - jump * h)
+  if (slide) ctx.scale(1.1, 0.55)
+
   if (boost) {
-    for (const s of [-1, 1]) {
-      const fl = h * (0.7 + Math.random() * 0.6)
-      const g = ctx.createLinearGradient(0, -h * 0.15, 0, -h * 0.15 + fl)
-      g.addColorStop(0, '#fff')
-      g.addColorStop(0.3, '#7dd3fc')
-      g.addColorStop(0.7, 'rgba(124,58,237,.7)')
-      g.addColorStop(1, 'rgba(124,58,237,0)')
-      ctx.fillStyle = g
-      ctx.beginPath()
-      ctx.moveTo(s * w * 0.22 - w * 0.06, -h * 0.15)
-      ctx.lineTo(s * w * 0.22 + w * 0.06, -h * 0.15)
-      ctx.lineTo(s * w * 0.22, -h * 0.15 + fl)
-      ctx.closePath()
-      ctx.fill()
+    ctx.fillStyle = 'rgba(74,222,128,.35)'
+    ctx.beginPath()
+    ctx.ellipse(0, -h * 0.5, h * 0.42, h * 0.62, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const shoe = wear.sneakers ? '#22c55e' : '#f8fafc'
+  const top = wear.hoodie ? '#ec4899' : '#f97316'
+  const legW = h * 0.12
+  // legs (alternating lift)
+  for (const s of [-1, 1]) {
+    const lift = Math.max(0, s * sw) * h * 0.12
+    const lx = s * h * 0.075 - legW / 2
+    rr(ctx, lx, -h * 0.42 - lift * 0.3, legW, h * 0.38 - lift * 0.4, legW * 0.4)
+    blob(ctx, '#1d4ed8', lw)
+    rr(ctx, lx - legW * 0.15, -h * 0.08 - lift, legW * 1.3, h * 0.09, h * 0.04)
+    blob(ctx, shoe, lw)
+    if (wear.sneakers) {
+      ctx.fillStyle = 'rgba(134,239,172,.6)'
+      ctx.fillRect(lx - legW * 0.15, -h * 0.02 - lift, legW * 1.3, h * 0.025)
     }
   }
-
-  // wheels
-  ctx.fillStyle = '#0b0b12'
-  rr(ctx, -w * 0.5, -h * 0.42, w * 0.17, h * 0.42, 4)
-  ctx.fill()
-  rr(ctx, w * 0.33, -h * 0.42, w * 0.17, h * 0.42, 4)
-  ctx.fill()
-
-  // cabin
-  ctx.fillStyle = skin.glass || '#1e1b4b'
+  // arms (swing opposite)
+  for (const s of [-1, 1]) {
+    const a = -s * sw * 0.5
+    ctx.save()
+    ctx.translate(s * h * 0.16, -h * 0.66)
+    ctx.rotate(a + s * 0.18)
+    rr(ctx, -h * 0.05, 0, h * 0.1, h * 0.26, h * 0.05)
+    blob(ctx, top, lw)
+    ctx.beginPath()
+    ctx.arc(0, h * 0.28, h * 0.05, 0, Math.PI * 2)
+    blob(ctx, '#f1c27d', lw)
+    ctx.restore()
+  }
+  // torso
+  rr(ctx, -h * 0.17, -h * 0.74, h * 0.34, h * 0.36, h * 0.09)
+  blob(ctx, top, lw)
+  if (wear.hoodie) {
+    // hood + logo
+    ctx.beginPath()
+    ctx.ellipse(0, -h * 0.72, h * 0.13, h * 0.07, 0, 0, Math.PI * 2)
+    blob(ctx, '#be185d', lw)
+    ctx.fillStyle = '#fff'
+    ctx.font = `900 ${h * 0.07}px "Lilita One", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.fillText('CD', 0, -h * 0.5)
+  } else {
+    // backpack
+    rr(ctx, -h * 0.11, -h * 0.68, h * 0.22, h * 0.22, h * 0.05)
+    blob(ctx, '#facc15', lw)
+    ctx.fillStyle = OUTLINE
+    ctx.fillRect(-h * 0.06, -h * 0.6, h * 0.12, h * 0.02)
+  }
+  // head (back view: hair)
   ctx.beginPath()
-  ctx.moveTo(-w * 0.3, -h * 0.82)
-  ctx.lineTo(-w * 0.2, -h * 1.32)
-  ctx.lineTo(w * 0.2, -h * 1.32)
-  ctx.lineTo(w * 0.3, -h * 0.82)
-  ctx.closePath()
-  ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,.18)'
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.17, -h * 1.27)
-  ctx.lineTo(-w * 0.02, -h * 1.27)
-  ctx.lineTo(-w * 0.12, -h * 0.9)
-  ctx.lineTo(-w * 0.24, -h * 0.9)
-  ctx.closePath()
-  ctx.fill()
-
-  // body
-  const bg = ctx.createLinearGradient(0, -h, 0, 0)
-  bg.addColorStop(0, body)
-  bg.addColorStop(1, shade(body))
-  ctx.fillStyle = bg
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.47, -h * 0.12)
-  ctx.lineTo(-w * 0.44, -h * 0.8)
-  ctx.quadraticCurveTo(0, -h * 0.95, w * 0.44, -h * 0.8)
-  ctx.lineTo(w * 0.47, -h * 0.12)
-  ctx.quadraticCurveTo(0, h * 0.02, -w * 0.47, -h * 0.12)
-  ctx.closePath()
-  ctx.fill()
-
-  // racing stripe
-  ctx.fillStyle = accent
-  ctx.fillRect(-w * 0.05, -h * 0.9, w * 0.1, h * 0.78)
-
-  // spoiler
-  ctx.fillStyle = accent
-  rr(ctx, -w * 0.52, -h * 1.0, w * 1.04, h * 0.1, 3)
-  ctx.fill()
-  ctx.fillStyle = shade(body)
-  ctx.fillRect(-w * 0.32, -h * 0.92, w * 0.05, h * 0.14)
-  ctx.fillRect(w * 0.27, -h * 0.92, w * 0.05, h * 0.14)
-
-  // tail lights
-  ctx.shadowColor = '#ff2d55'
-  ctx.shadowBlur = brake ? 22 : 12
-  ctx.fillStyle = brake ? '#ff6b81' : '#ff2d55'
-  rr(ctx, -w * 0.42, -h * 0.6, w * 0.26, h * 0.13, 3)
-  ctx.fill()
-  rr(ctx, w * 0.16, -h * 0.6, w * 0.26, h * 0.13, 3)
-  ctx.fill()
-  ctx.shadowBlur = 0
-
-  // plate + exhausts
-  ctx.fillStyle = '#e5e7eb'
-  rr(ctx, -w * 0.1, -h * 0.4, w * 0.2, h * 0.14, 2)
-  ctx.fill()
-  ctx.fillStyle = '#111'
-  ctx.font = `bold ${Math.max(6, h * 0.1)}px sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('NITRO', 0, -h * 0.33)
-  ctx.fillStyle = '#9ca3af'
+  ctx.arc(0, -h * 0.86, h * 0.14, 0, Math.PI * 2)
+  blob(ctx, '#3f2a1d', lw)
+  ctx.fillStyle = '#f1c27d'
   for (const s of [-1, 1]) {
     ctx.beginPath()
-    ctx.arc(s * w * 0.22, -h * 0.17, w * 0.035, 0, Math.PI * 2)
+    ctx.arc(s * h * 0.14, -h * 0.85, h * 0.035, 0, Math.PI * 2)
     ctx.fill()
+  }
+  if (wear.cap) {
+    ctx.beginPath()
+    ctx.arc(0, -h * 0.88, h * 0.145, Math.PI, 0)
+    ctx.closePath()
+    blob(ctx, '#2563eb', lw)
+    rr(ctx, -h * 0.06, -h * 0.9, h * 0.12, h * 0.05, h * 0.02)
+    blob(ctx, '#93c5fd', lw * 0.7)
+  }
+  if (wear.headphones) {
+    ctx.lineWidth = h * 0.035
+    ctx.strokeStyle = '#eab308'
+    ctx.beginPath()
+    ctx.arc(0, -h * 0.86, h * 0.155, Math.PI * 1.05, Math.PI * 1.95)
+    ctx.stroke()
+    for (const s of [-1, 1]) {
+      rr(ctx, s * h * 0.155 - h * 0.04, -h * 0.9, h * 0.08, h * 0.11, h * 0.03)
+      blob(ctx, '#facc15', lw)
+    }
   }
   ctx.restore()
 }
 
-function shade(c) {
-  if (c.startsWith('hsl')) return c.replace('58%)', '32%)')
-  const n = parseInt(c.slice(1), 16)
-  const r = Math.floor(((n >> 16) & 255) * 0.55)
-  const g = Math.floor(((n >> 8) & 255) * 0.55)
-  const b = Math.floor((n & 255) * 0.55)
-  return `rgb(${r},${g},${b})`
-}
-
-// Traffic car seen from behind
-export function drawTraffic(ctx, x, y, w, color, t) {
-  const h = w * 0.62
-  ctx.fillStyle = 'rgba(0,0,0,.4)'
+/* Train: front face at (x, y) bottom-centre, w wide; roof recedes to (x2, y2, w2) */
+export function drawTrain(ctx, x, y, w, x2, y2, w2, color, s) {
+  const h = w * 1.15
+  const h2 = w2 * 1.15
+  // roof / side going into the distance
+  ctx.fillStyle = shade(color, 0.75)
   ctx.beginPath()
-  ctx.ellipse(x, y, w * 0.55, h * 0.12, 0, 0, Math.PI * 2)
+  ctx.moveTo(x - w / 2, y - h)
+  ctx.lineTo(x2 - w2 / 2, y2 - h2)
+  ctx.lineTo(x2 + w2 / 2, y2 - h2)
+  ctx.lineTo(x + w / 2, y - h)
+  ctx.closePath()
   ctx.fill()
-  ctx.fillStyle = '#0b0b12'
-  ctx.fillRect(x - w * 0.48, y - h * 0.28, w * 0.14, h * 0.28)
-  ctx.fillRect(x + w * 0.34, y - h * 0.28, w * 0.14, h * 0.28)
+  ctx.strokeStyle = OUTLINE
+  ctx.lineWidth = Math.max(1, 2 * s)
+  ctx.stroke()
+  // front face
+  rr(ctx, x - w / 2, y - h, w, h, w * 0.12)
   ctx.fillStyle = color
-  rr(ctx, x - w * 0.46, y - h * 0.82, w * 0.92, h * 0.72, w * 0.08)
   ctx.fill()
-  ctx.fillStyle = 'rgba(15,15,35,.85)'
-  rr(ctx, x - w * 0.33, y - h * 1.12, w * 0.66, h * 0.36, w * 0.06)
+  ctx.stroke()
+  ctx.fillStyle = '#f8fafc'
+  ctx.fillRect(x - w / 2, y - h * 0.42, w, h * 0.08)
+  // windshield
+  rr(ctx, x - w * 0.36, y - h * 0.88, w * 0.72, h * 0.32, w * 0.06)
+  ctx.fillStyle = '#bae6fd'
   ctx.fill()
-  ctx.fillStyle = 'rgba(0,0,0,.25)'
-  ctx.fillRect(x - w * 0.46, y - h * 0.3, w * 0.92, h * 0.2)
-  const blink = Math.sin(t * 8) > 0
-  ctx.fillStyle = blink ? '#ff4d6d' : '#c81e3a'
-  ctx.fillRect(x - w * 0.42, y - h * 0.62, w * 0.2, h * 0.12)
-  ctx.fillRect(x + w * 0.22, y - h * 0.62, w * 0.2, h * 0.12)
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(255,255,255,.6)'
+  ctx.fillRect(x - w * 0.3, y - h * 0.84, w * 0.12, h * 0.24)
+  // lights
+  ctx.fillStyle = '#fde047'
+  for (const sd of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(x + sd * w * 0.3, y - h * 0.2, w * 0.07, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.fillStyle = OUTLINE
+  ctx.fillRect(x - w * 0.12, y - h * 0.25, w * 0.24, h * 0.1)
 }
 
-export function drawBarrier(ctx, x, y, w, t) {
-  const h = w * 0.34
-  ctx.fillStyle = '#222'
-  ctx.fillRect(x - w * 0.42, y - h * 0.3, w * 0.06, h * 0.3)
-  ctx.fillRect(x + w * 0.36, y - h * 0.3, w * 0.06, h * 0.3)
+export function drawHurdle(ctx, x, y, w, s) {
+  const h = w * 0.42
+  ctx.lineWidth = Math.max(1, 2 * s)
+  ctx.strokeStyle = OUTLINE
+  ctx.fillStyle = '#64748b'
+  ctx.fillRect(x - w * 0.42, y - h, w * 0.06, h)
+  ctx.fillRect(x + w * 0.36, y - h, w * 0.06, h)
   ctx.save()
-  rr(ctx, x - w / 2, y - h, w, h * 0.7, 3)
+  rr(ctx, x - w / 2, y - h, w, h * 0.5, w * 0.04)
   ctx.clip()
   ctx.fillStyle = '#fff'
-  ctx.fillRect(x - w / 2, y - h, w, h * 0.7)
-  ctx.fillStyle = '#f97316'
-  const step = w / 6
-  for (let i = -1; i < 7; i++) {
+  ctx.fillRect(x - w / 2, y - h, w, h)
+  ctx.fillStyle = '#ef4444'
+  const st = w / 5
+  for (let i = -1; i < 6; i++) {
     ctx.beginPath()
-    ctx.moveTo(x - w / 2 + i * step, y - h * 0.3)
-    ctx.lineTo(x - w / 2 + i * step + step / 2, y - h * 0.3)
-    ctx.lineTo(x - w / 2 + i * step + step, y - h)
-    ctx.lineTo(x - w / 2 + i * step + step / 2, y - h)
+    ctx.moveTo(x - w / 2 + i * st, y - h * 0.5)
+    ctx.lineTo(x - w / 2 + i * st + st / 2, y - h * 0.5)
+    ctx.lineTo(x - w / 2 + i * st + st, y - h)
+    ctx.lineTo(x - w / 2 + i * st + st / 2, y - h)
     ctx.fill()
   }
   ctx.restore()
-  const on = Math.sin(t * 10) > 0
-  ctx.fillStyle = on ? '#fde047' : '#854d0e'
-  ctx.shadowColor = '#fde047'
-  ctx.shadowBlur = on ? 14 : 0
-  ctx.beginPath()
-  ctx.arc(x - w * 0.36, y - h * 1.1, w * 0.05, 0, Math.PI * 2)
-  ctx.arc(x + w * 0.36, y - h * 1.1, w * 0.05, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.shadowBlur = 0
+  rr(ctx, x - w / 2, y - h, w, h * 0.5, w * 0.04)
+  ctx.stroke()
+}
+
+export function drawOverhead(ctx, x, y, w, s) {
+  const h = w * 1.0
+  ctx.lineWidth = Math.max(1, 2 * s)
+  ctx.strokeStyle = OUTLINE
+  ctx.fillStyle = '#475569'
+  ctx.fillRect(x - w * 0.48, y - h, w * 0.06, h)
+  ctx.fillRect(x + w * 0.42, y - h, w * 0.06, h)
+  ctx.save()
+  rr(ctx, x - w / 2, y - h, w, h * 0.3, w * 0.04)
+  ctx.clip()
+  ctx.fillStyle = '#facc15'
+  ctx.fillRect(x - w / 2, y - h, w, h * 0.3)
+  ctx.fillStyle = OUTLINE
+  const st = w / 6
+  for (let i = -1; i < 7; i++) {
+    ctx.beginPath()
+    ctx.moveTo(x - w / 2 + i * st, y - h * 0.7)
+    ctx.lineTo(x - w / 2 + i * st + st / 2, y - h * 0.7)
+    ctx.lineTo(x - w / 2 + i * st + st, y - h)
+    ctx.lineTo(x - w / 2 + i * st + st / 2, y - h)
+    ctx.fill()
+  }
+  ctx.restore()
+  rr(ctx, x - w / 2, y - h, w, h * 0.3, w * 0.04)
+  ctx.stroke()
 }
 
 export function drawCoin(ctx, x, y, r, t, seed) {
-  const sw = Math.abs(Math.cos(t * 5 + seed))
-  ctx.shadowColor = '#fbbf24'
-  ctx.shadowBlur = r * 1.2
-  ctx.fillStyle = '#f59e0b'
+  const sw = Math.abs(Math.cos(t * 4 + seed))
+  ctx.lineWidth = Math.max(1, r * 0.18)
+  ctx.strokeStyle = '#b45309'
+  ctx.fillStyle = '#fbbf24'
   ctx.beginPath()
   ctx.ellipse(x, y, Math.max(1, r * sw), r, 0, 0, Math.PI * 2)
   ctx.fill()
-  ctx.shadowBlur = 0
-  ctx.fillStyle = '#fde68a'
-  ctx.beginPath()
-  ctx.ellipse(x, y, Math.max(0.5, r * 0.62 * sw), r * 0.62, 0, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.stroke()
+  if (sw > 0.4) {
+    ctx.fillStyle = '#fde68a'
+    ctx.beginPath()
+    ctx.ellipse(x - r * 0.15 * sw, y - r * 0.15, r * 0.35 * sw, r * 0.45, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 export function drawCan(ctx, x, y, w, t) {
-  const h = w * 1.75
-  const pulse = 0.6 + Math.sin(t * 6) * 0.4
+  const h = w * 1.7
+  const b = Math.sin(t * 5) * w * 0.15
+  ctx.save()
+  ctx.translate(x, y + b)
   ctx.shadowColor = '#4ade80'
-  ctx.shadowBlur = w * pulse
+  ctx.shadowBlur = w * 0.8
+  rr(ctx, -w / 2, -h, w, h, w * 0.2)
   ctx.fillStyle = '#16a34a'
-  rr(ctx, x - w / 2, y - h, w, h, w * 0.18)
   ctx.fill()
   ctx.shadowBlur = 0
-  ctx.fillStyle = '#d1d5db'
-  ctx.fillRect(x - w / 2, y - h, w, h * 0.1)
+  ctx.lineWidth = Math.max(1, w * 0.08)
+  ctx.strokeStyle = OUTLINE
+  ctx.stroke()
+  ctx.fillStyle = '#d4d4d8'
+  ctx.fillRect(-w / 2, -h, w, h * 0.12)
   ctx.fillStyle = '#bef264'
-  ctx.fillRect(x - w / 2, y - h * 0.62, w, h * 0.24)
-  if (w > 10) {
-    ctx.fillStyle = '#052e16'
-    ctx.font = `900 ${w * 0.5}px sans-serif`
+  ctx.fillRect(-w / 2, -h * 0.62, w, h * 0.26)
+  if (w > 12) {
+    ctx.fillStyle = '#14532d'
+    ctx.font = `900 ${w * 0.55}px "Lilita One", sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('V', x, y - h * 0.5)
+    ctx.fillText('V', 0, -h * 0.49)
   }
+  ctx.restore()
 }
 
 export function drawMagnet(ctx, x, y, r, t) {
   ctx.save()
-  ctx.translate(x, y - r)
-  ctx.rotate(Math.sin(t * 4) * 0.2)
-  ctx.shadowColor = '#f43f5e'
-  ctx.shadowBlur = r
-  ctx.strokeStyle = '#ef4444'
-  ctx.lineWidth = r * 0.45
+  ctx.translate(x, y + Math.sin(t * 5) * r * 0.15)
+  ctx.rotate(Math.sin(t * 3) * 0.2)
+  ctx.lineCap = 'butt'
+  ctx.strokeStyle = OUTLINE
+  ctx.lineWidth = r * 0.62
   ctx.beginPath()
   ctx.arc(0, 0, r * 0.7, Math.PI, 0, true)
   ctx.stroke()
-  ctx.shadowBlur = 0
+  ctx.strokeStyle = '#ef4444'
+  ctx.lineWidth = r * 0.45
+  ctx.stroke()
   ctx.fillStyle = '#e5e7eb'
-  ctx.fillRect(-r * 0.92, -r * 0.05, r * 0.45, r * 0.35)
-  ctx.fillRect(r * 0.47, -r * 0.05, r * 0.45, r * 0.35)
+  ctx.fillRect(-r * 0.93, -r * 0.05, r * 0.46, r * 0.32)
+  ctx.fillRect(r * 0.47, -r * 0.05, r * 0.46, r * 0.32)
   ctx.restore()
 }
 
-export function drawShield(ctx, x, y, r, t) {
+export function drawDoubler(ctx, x, y, r, t) {
   ctx.save()
-  ctx.translate(x, y - r)
-  ctx.shadowColor = '#22d3ee'
-  ctx.shadowBlur = r
-  ctx.strokeStyle = '#67e8f9'
-  ctx.lineWidth = Math.max(1, r * 0.15)
-  ctx.fillStyle = 'rgba(34,211,238,.25)'
+  ctx.translate(x, y + Math.sin(t * 5) * r * 0.15)
   ctx.beginPath()
-  for (let i = 0; i < 6; i++) {
-    const a = (Math.PI / 3) * i + t
-    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r)
+  for (let i = 0; i < 10; i++) {
+    const a = (Math.PI / 5) * i - Math.PI / 2 + t
+    const rad = i % 2 ? r * 0.55 : r
+    ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad)
   }
   ctx.closePath()
+  ctx.fillStyle = '#a855f7'
   ctx.fill()
+  ctx.lineWidth = Math.max(1, r * 0.12)
+  ctx.strokeStyle = OUTLINE
   ctx.stroke()
+  if (r > 8) {
+    ctx.fillStyle = '#fff'
+    ctx.font = `900 ${r * 0.7}px "Lilita One", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('2x', 0, r * 0.05)
+  }
   ctx.restore()
+}
+
+export function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.floor(((n >> 16) & 255) * k)
+  const g = Math.floor(((n >> 8) & 255) * k)
+  const b = Math.floor((n & 255) * k)
+  return `rgb(${r},${g},${b})`
 }
