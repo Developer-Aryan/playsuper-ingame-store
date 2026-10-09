@@ -1,43 +1,53 @@
-# PlaySuper × Nitro Rush: In-Game Commerce Store
+# Nitro Rush × PlaySuper: commerce that lives inside the game
 
-**Live prototype:** https://playsuper-ingame-store.vercel.app
+**▶ Play it:** https://playsuper-ingame-store.vercel.app
 
-This is a clickable prototype of a store that lives inside a mobile racing game ("Nitro Rush"). Players pay for real-world products with a mix of in-game coins they earned by playing and real money.
+This is a playable prototype for the PlaySuper Product Associate assignment. It's a synthwave lane-racer with a game economy built around it. Players combine coins they earned by racing with real money to buy **real-world products**. Each product also unlocks something exclusive in the game.
 
-> Click the 💡 button on mobile, or read the right-hand panel on desktop. Every screen explains why it was designed the way it was.
+> On desktop, a panel next to the phone explains the product reasoning behind each screen. On mobile, tap 💡 to see the same notes.
 
-## Demo flow (2 minutes)
-1. **Home:** your pinned **Goal** (Wireless Earbuds) shows how far you are from the maximum coin discount.
-2. **Race:** an 8-second mini-game where you tap coins. No store or ads appear during gameplay.
-3. **Post-win result:** a personalised **Win Drop** appears. It runs for 10 minutes and lets coins cover an extra 10% of the price.
-4. **Product page:** use the slider to split the price between coins and cash. Coins can only cover part of the price (the **coin cap**), and the cap grows with your player level. If you're short on coins, you can **Set as Goal**.
-5. **Checkout:** one screen with a saved address and UPI. Coins are deducted only after payment succeeds.
-6. **Success:** the in-game bonus item is equipped on your car straight away, and the delivery becomes a **Quest** you can track.
-7. **Store tabs:** *For You* (picked from how you play), *100% Coins* (sponsored by brands), *Unlockables* (gated by level or win streak).
+## The thesis
+Most "in-game stores" are e-commerce catalogues pasted into a game. Players arrive at a game wanting to **play**, not to shop, so in this prototype commerce is part of the **reward layer**:
 
-## Core question: how is in-game commerce different from e-commerce?
-| Traditional e-commerce | This in-game store |
+| Traditional e-commerce | Nitro Rush |
 |---|---|
-| The user arrives with intent to buy | Intent is **created by gameplay**. The best moment to show the store is right after a win. |
-| Discounts are a marketing cost | Discounts are **earned currency**. Coins carry real ₹ value, which makes play feel more rewarding. |
-| Wishlist is passive | **Goal** turns a wishlist into a progression system: products give players a reason to keep playing. |
-| Anyone can buy anything | **Unlockables and rarity** use the game's own language. Some merch has to be earned. |
-| Purchase ends the journey | Purchase **feeds back into the game**: a bonus cosmetic, plus delivery tracked as a quest. |
-| Pricing is fixed | A **coin/cash mix with a level-based cap** protects margins and the in-game economy. |
+| The shopper arrives already wanting to buy | **Gameplay creates the intent**: a pinned Goal product, a Drop after a personal best, brand missions |
+| Discounts are a marketing cost | Discounts are **earned currency**, and how much coins can cover grows with your skill level |
+| Brands buy banners | Brands are **part of the gameplay**: VoltUp cans *are* the nitro power-up, and collecting them unlocks a real VoltUp pack |
+| Wishlist | **Goal**: a progress bar on your garage that every race fills |
+| Anyone can buy anything | **Legendary** items are earned (Level 12, 3,000 m run) |
+| Purchase ends the journey | Purchase **loops back into the game**: an exclusive car skin is equipped instantly, and delivery becomes a Quest |
 
-## Key assumptions
-- Mid-core Indian mobile gamers aged 16–28, comfortable paying with UPI.
-- 10 coins = ₹1. A typical race earns about 250 coins (≈ ₹25).
-- Coin cap is 25% at Rookie (Lv 1–9), 40% at Pro (Lv 10–19) and 60% at Legend (Lv 20+). Brand-sponsored items allow up to 100%.
-- PlaySuper and partner brands fund the coin-covered part of the price as a cost of acquiring customers. The game earns a commission and gets better retention.
-- No loot boxes or randomised paid rewards. Paying real money for random outcomes is a regulatory and trust risk.
+## What's in the prototype
+- **The game:** 3-lane perspective racer drawn on canvas.
+  - Steer with ←/→ or swipe. Grab 3 VoltUp cans to charge nitro, then hit Space or swipe up.
+  - Nitro smashes through traffic.
+  - Late dodges score near-miss combos.
+  - Power-ups: coin magnet and shield.
+  - Speed ramps up over the run. Audio is synthesised, with no asset files.
+- **Meta loop:** XP and levels, personal best, daily missions, garage skins bought with coins (the coin sink), and progress saved across sessions.
+- **Reward Vault (the store):**
+  - Your coins are shown as ₹ value.
+  - Coin cap by tier: Rookie 25%, Pro 40%, Legend 60%.
+  - Pinned Goal and brand missions.
+  - Recommendations based on how you play.
+  - Locked Legendaries.
+- **Product page:** a slider to split the price between coins and cash, a "Set as Goal" option, and a live preview of the exclusive skin.
+- **Checkout:** one screen, UPI first. Coins are held and only deducted after payment succeeds.
+- **Post-purchase:** the skin is unlocked and equipped, and a delivery Quest tracks the order live and pays +100 coins when it arrives.
+- **Never mid-race:** no store, offers or prices during a race or in the pause menu.
 
-## Tech
-Vite + React, with no backend. All state is held in memory (use **Reset demo** to start over). Deployed on Vercel.
+## Economy assumptions
+- 10 coins = ₹1. A 1-minute race earns about 250 coins.
+- Coins are **earned only, never bought**. That keeps "buy coins to buy products" loops out of the economy.
+- PlaySuper and partner brands fund the share of the price covered by coins, as a cost of acquiring customers. Brand missions are charged per completion.
+- No loot boxes and no random rewards involving real money.
 
-## AI / vibe-coding tools used
-- **Claude Code** for planning, product reasoning, code generation and deployment
-- **Vercel** for hosting
+## Built with
+Vite + React. The race engine is hand-written on HTML canvas with WebAudio sound and has no game library. Deployed on Vercel.
+
+## AI / vibe-coding tools
+- **Claude Code (Anthropic):** product reasoning, game engine, UI, testing and deployment
 
 ## Run locally
 ```bash
